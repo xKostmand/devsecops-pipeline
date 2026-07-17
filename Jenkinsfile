@@ -68,8 +68,8 @@ pipeline {
                 sh 'sleep 5'
 
                 echo "Running SQLMap SQL Injection Scan..."
-                // Test the SQL Injection endpoint
-                sh 'docker run --rm securing/sqlmap -u "${TARGET_URL}/api/user?username=admin" --batch --text-only --columns --batch > reports/sqlmap_report.txt || true'
+                // Test the SQL Injection endpoint using python image
+                sh 'docker run --rm python:3.8-slim /bin/sh -c "pip install --quiet sqlmap && sqlmap -u \\"${TARGET_URL}/api/user?username=admin\\" --batch --text-only --columns --batch" > reports/sqlmap_report.txt || true'
 
                 echo "Running OWASP ZAP Baseline Scan..."
                 // Run OWASP ZAP against the home and API endpoints
