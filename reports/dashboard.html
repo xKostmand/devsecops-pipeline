@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevSecOps Pipeline Security Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(20, 26, 42, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #8b5cf6;
+            --primary-hover: #a78bfa;
+            
+            --critical: #ef4444;
+            --high: #f97316;
+            --medium: #f59e0b;
+            --low: #3b82f6;
+            --info: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.05) 0%, transparent 40%),
+                              radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px;
+            background: rgba(15, 22, 38, 0.95);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 32px;
+            letter-spacing: -0.025em;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .nav-item {
+            padding: 12px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            color: var(--text-main);
+            background: rgba(139, 92, 246, 0.15);
+            border-left: 3px solid var(--primary);
+        }
+
+        /* Main Content */
+        main {
+            margin-left: 260px;
+            flex-grow: 1;
+            padding: 40px;
+            max-width: 1400px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .btn-refresh {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s ease;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+        }
+
+        .btn-refresh:hover {
+            background: var(--primary-hover);
+        }
+
+        /* Metrics grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .metric-card.critical::before { background: var(--critical); }
+        .metric-card.high::before { background: var(--high); }
+        .metric-card.medium::before { background: var(--medium); }
+        .metric-card.low::before { background: var(--low); }
+
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-val {
+            font-size: 2.25rem;
+            font-weight: 800;
+        }
+
+        /* Views */
+        .view-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out forwards;
+        }
+
+        .view-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tables & Listings */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(12px);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .vuln-item {
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .vuln-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .vuln-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .badge.critical { background: rgba(239, 68, 68, 0.15); color: var(--critical); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge.high { background: rgba(249, 115, 22, 0.15); color: var(--high); border: 1px solid rgba(249, 115, 22, 0.3); }
+        .badge.medium { background: rgba(245, 158, 11, 0.15); color: var(--medium); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge.low { background: rgba(59, 130, 246, 0.15); color: var(--low); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge.info { background: rgba(16, 185, 129, 0.15); color: var(--info); border: 1px solid rgba(16, 185, 129, 0.3); }
+
+        .vuln-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .meta-field strong {
+            color: var(--text-main);
+        }
+
+        .vuln-desc {
+            font-size: 0.95rem;
+            color: #d1d5db;
+        }
+
+        .vuln-code {
+            background: #070913;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            color: #f3f4f6;
+            margin-top: 8px;
+        }
+
+        .vuln-solution {
+            font-size: 0.9rem;
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #a7f3d0;
+        }
+
+        .no-data {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+        }
+
+        pre.raw-report {
+            background: #070913;
+            color: #f3f4f6;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <aside>
+        <div class="logo">DevSecOps Shield</div>
+        <ul class="nav-links">
+            <li class="nav-item active" onclick="switchView('summary')">Summary</li>
+            <li class="nav-item" onclick="switchView('bandit')">Bandit (SAST)</li>
+            <li class="nav-item" onclick="switchView('safety')">Safety (Dependencies)</li>
+            <li class="nav-item" onclick="switchView('trivy-config')">Trivy Config (IaC)</li>
+            <li class="nav-item" onclick="switchView('trivy-image')">Trivy Image</li>
+            <li class="nav-item" onclick="switchView('zap')">OWASP ZAP (DAST)</li>
+            <li class="nav-item" onclick="switchView('sqlmap')">SQLMap (DAST)</li>
+        </ul>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <h1 id="page-title">Vulnerability Summary</h1>
+                <p style="color: var(--text-muted); margin-top: 4px;">Dynamic security audit pipeline results dashboard</p>
+            </div>
+            <button class="btn-refresh" onclick="loadAllReports()">Reload Reports</button>
+        </header>
+
+        <!-- Metric Overview -->
+        <section class="metrics-grid">
+            <div class="metric-card critical">
+                <span class="metric-label">Critical</span>
+                <span class="metric-val" id="cnt-critical">0</span>
+            </div>
+            <div class="metric-card high">
+                <span class="metric-label">High</span>
+                <span class="metric-val" id="cnt-high">0</span>
+            </div>
+            <div class="metric-card medium">
+                <span class="metric-label">Medium</span>
+                <span class="metric-val" id="cnt-medium">0</span>
+            </div>
+            <div class="metric-card low">
+                <span class="metric-label">Low</span>
+                <span class="metric-val" id="cnt-low">0</span>
+            </div>
+        </section>
+
+        <!-- SUMMARY VIEW -->
+        <div id="view-summary" class="view-content active">
+            <div class="card">
+                <h2 class="card-title">Security Status Overview</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">
+                    This dashboard dynamically fetches the latest results generated by the security pipeline. Start a Jenkins build or commit changes to run the scan scripts again.
+                </p>
+                <div id="summary-overview">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- BANDIT SAST VIEW -->
+        <div id="view-bandit" class="view-content">
+            <div class="card">
+                <h2 class="card-title">Bandit Static Application Security Test (Python SAST)</h2>
+                <div id="bandit-findings" class="findings-container"></div>
+            </div>
+        </div>
+
+        <!-- SAFETY DEPS VIEW -->
+        <div id="view-safety" class="view-content">
+            <div class="card">
+                <h2 class="card-title">Safety Python Package Dependencies Scanner</h2>
+                <div id="safety-findings" class="findings-container"></div>
+            </div>
+        </div>
+
+        <!-- TRIVY CONFIG VIEW -->
+        <div id="view-trivy-config" class="view-content">
+            <div class="card">
+                <h2 class="card-title">Trivy Configuration Scanner (Dockerfile Security)</h2>
+                <div id="trivy-config-findings" class="findings-container"></div>
+            </div>
+        </div>
+
+        <!-- TRIVY IMAGE VIEW -->
+        <div id="view-trivy-image" class="view-content">
+            <div class="card">
+                <h2 class="card-title">Trivy Container Image Vulnerabilities</h2>
+                <div id="trivy-image-findings" class="findings-container"></div>
+            </div>
+        </div>
+
+        <!-- ZAP DAST VIEW -->
+        <div id="view-zap" class="view-content">
+            <div class="card">
+                <h2 class="card-title">OWASP ZAP Dynamic Baseline Scanner (DAST)</h2>
+                <div id="zap-findings" class="findings-container"></div>
+            </div>
+        </div>
+
+        <!-- SQLMAP DAST VIEW -->
+        <div id="view-sqlmap" class="view-content">
+            <div class="card">
+                <h2 class="card-title">SQLMap SQL Injection Output (Raw Output)</h2>
+                <div id="sqlmap-findings" class="findings-container"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Security Metrics
+        let counts = { critical: 0, high: 0, medium: 0, low: 0 };
+
+        function updateMetricsUI() {
+            document.getElementById('cnt-critical').innerText = counts.critical;
+            document.getElementById('cnt-high').innerText = counts.high;
+            document.getElementById('cnt-medium').innerText = counts.medium;
+            document.getElementById('cnt-low').innerText = counts.low;
+        }
+
+        function switchView(viewName) {
+            // Update Active Link in Sidebar
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // Find active sidebar item matching the view
+            const items = document.querySelectorAll('.nav-item');
+            const viewMap = ['summary', 'bandit', 'safety', 'trivy-config', 'trivy-image', 'zap', 'sqlmap'];
+            const idx = viewMap.indexOf(viewName);
+            if (idx !== -1) {
+                items[idx].classList.add('active');
+            }
+
+            // Update View
+            document.querySelectorAll('.view-content').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+
+            // Update Header Title
+            const titles = {
+                'summary': 'Vulnerability Summary',
+                'bandit': 'Bandit SAST (Source Code Scan)',
+                'safety': 'Safety Dependency Auditor',
+                'trivy-config': 'Trivy Dockerfile Config Audit',
+                'trivy-image': 'Trivy Container Image Scan',
+                'zap': 'OWASP ZAP Dynamic Audit (DAST)',
+                'sqlmap': 'SQLMap SQL Injection Output'
+            };
+            document.getElementById('page-title').innerText = titles[viewName] || 'Vulnerability Dashboard';
+        }
+
+        async function loadJson(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Not found');
+                return await response.json();
+            } catch (err) {
+                console.warn(`Could not load ${url}:`, err);
+                return null;
+            }
+        }
+
+        async function loadText(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Not found');
+                return await response.text();
+            } catch (err) {
+                console.warn(`Could not load ${url}:`, err);
+                return null;
+            }
+        }
+
+        async function loadAllReports() {
+            // Reset counters
+            counts = { critical: 0, high: 0, medium: 0, low: 0 };
+            
+            // 1. Load Bandit
+            const banditData = await loadJson('bandit_report.json');
+            renderBandit(banditData);
+
+            // 2. Load Safety
+            const safetyData = await loadJson('safety_report.json');
+            renderSafety(safetyData);
+
+            // 3. Load Trivy Config
+            const trivyConfigData = await loadJson('trivy_config_report.json');
+            renderTrivyConfig(trivyConfigData);
+
+            // 4. Load Trivy Image
+            const trivyImageData = await loadJson('trivy_image_report.json');
+            renderTrivyImage(trivyImageData);
+
+            // 5. Load ZAP
+            const zapData = await loadJson('zap_report.json');
+            renderZap(zapData);
+
+            // 6. Load SQLMap (Text)
+            const sqlmapData = await loadText('sqlmap_report.txt');
+            renderSqlmap(sqlmapData);
+
+            // Update global metrics UI
+            updateMetricsUI();
+            renderSummary(banditData, safetyData, trivyConfigData, trivyImageData, zapData, sqlmapData);
+        }
+
+        function renderBandit(data) {
+            const container = document.getElementById('bandit-findings');
+            if (!data || !data.results || data.results.length === 0) {
+                container.innerHTML = `<div class="no-data">No vulnerabilities found or report missing (bandit_report.json)</div>`;
+                return;
+            }
+
+            let html = '';
+            data.results.forEach(issue => {
+                const severity = issue.issue_severity.toLowerCase();
+                if (counts[severity] !== undefined) counts[severity]++;
+                
+                html += `
+                <div class="vuln-item">
+                    <div class="vuln-header">
+                        <span class="vuln-title">${issue.issue_text}</span>
+                        <span class="badge ${severity}">${issue.issue_severity}</span>
+                    </div>
+                    <div class="vuln-meta">
+                        <span class="meta-field">File: <strong>${issue.filename}</strong></span>
+                        <span class="meta-field">Line: <strong>${issue.line_number}</strong></span>
+                        <span class="meta-field">Plugin: <strong>${issue.test_name} (${issue.test_id})</strong></span>
+                    </div>
+                    <pre class="vuln-code"><code>${escapeHtml(issue.code)}</code></pre>
+                    <div class="vuln-meta">
+                        <span class="meta-field"><a href="${issue.more_info}" target="_blank" style="color: var(--primary);">More Info / Documentation</a></span>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSafety(data) {
+            const container = document.getElementById('safety-findings');
+            if (!data || data.length === 0) {
+                container.innerHTML = `<div class="no-data">No dependency vulnerabilities found or report missing (safety_report.json)</div>`;
+                return;
+            }
+
+            let html = '';
+            data.forEach(item => {
+                const vuln = item.vulnerability;
+                // Safety doesn't specify severity easily in the JSON, let's map high to it for security dependencies
+                counts.high++;
+                
+                html += `
+                <div class="vuln-item">
+                    <div class="vuln-header">
+                        <span class="vuln-title">Vulnerable Package: ${vuln.package_name}</span>
+                        <span class="badge high">High</span>
+                    </div>
+                    <div class="vuln-meta">
+                        <span class="meta-field">Vulnerable Spec: <strong>${vuln.vulnerable_spec}</strong></span>
+                        <span class="meta-field">CVE ID: <strong>${vuln.cve || 'N/A'}</strong></span>
+                        <span class="meta-field">Safety ID: <strong>${vuln.id}</strong></span>
+                    </div>
+                    <p class="vuln-desc">${vuln.advisory}</p>
+                    <div class="vuln-solution">Upgrade ${vuln.package_name} to satisfy requirements (non-vulnerable version).</div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderTrivyConfig(data) {
+            const container = document.getElementById('trivy-config-findings');
+            if (!data || !data.Results || data.Results.length === 0) {
+                container.innerHTML = `<div class="no-data">No config vulnerabilities found or report missing (trivy_config_report.json)</div>`;
+                return;
+            }
+
+            let html = '';
+            data.Results.forEach(res => {
+                if (res.Misconfigurations) {
+                    res.Misconfigurations.forEach(mis => {
+                        let severity = mis.Severity.toLowerCase();
+                        if (severity === 'critical') counts.critical++;
+                        else if (severity === 'high') counts.high++;
+                        else if (severity === 'medium') counts.medium++;
+                        else counts.low++;
+
+                        html += `
+                        <div class="vuln-item">
+                            <div class="vuln-header">
+                                <span class="vuln-title">${mis.Title}</span>
+                                <span class="badge ${severity === 'critical' ? 'critical' : severity}">${mis.Severity}</span>
+                            </div>
+                            <div class="vuln-meta">
+                                <span class="meta-field">Target: <strong>${res.Target}</strong></span>
+                                <span class="meta-field">ID: <strong>${mis.ID}</strong></span>
+                            </div>
+                            <p class="vuln-desc">${mis.Description}</p>
+                        </div>`;
+                    });
+                }
+            });
+
+            container.innerHTML = html || `<div class="no-data">No configuration issues found.</div>`;
+        }
+
+        function renderTrivyImage(data) {
+            const container = document.getElementById('trivy-image-findings');
+            if (!data || !data.Results || data.Results.length === 0) {
+                container.innerHTML = `<div class="no-data">No container vulnerabilities found or report missing (trivy_image_report.json)</div>`;
+                return;
+            }
+
+            let html = '';
+            data.Results.forEach(res => {
+                if (res.Vulnerabilities) {
+                    res.Vulnerabilities.forEach(vuln => {
+                        let severity = vuln.Severity.toLowerCase();
+                        if (severity === 'critical') counts.critical++;
+                        else if (severity === 'high') counts.high++;
+                        else if (severity === 'medium') counts.medium++;
+                        else counts.low++;
+
+                        html += `
+                        <div class="vuln-item">
+                            <div class="vuln-header">
+                                <span class="vuln-title">${vuln.Title || vuln.VulnerabilityID}</span>
+                                <span class="badge ${severity === 'critical' ? 'critical' : severity}">${vuln.Severity}</span>
+                            </div>
+                            <div class="vuln-meta">
+                                <span class="meta-field">Package: <strong>${vuln.PkgName}</strong></span>
+                                <span class="meta-field">Installed Version: <strong>${vuln.InstalledVersion}</strong></span>
+                                <span class="meta-field">Fixed Version: <strong>${vuln.FixedVersion || 'None'}</strong></span>
+                                <span class="meta-field">CVE: <strong><a href="${vuln.PrimaryURL}" target="_blank" style="color: var(--primary);">${vuln.VulnerabilityID}</a></strong></span>
+                            </div>
+                        </div>`;
+                    });
+                }
+            });
+
+            container.innerHTML = html || `<div class="no-data">No image vulnerabilities found.</div>`;
+        }
+
+        function renderZap(data) {
+            const container = document.getElementById('zap-findings');
+            if (!data || !data.OWASPZAPReport || !data.OWASPZAPReport.site) {
+                container.innerHTML = `<div class="no-data">No ZAP vulnerabilities found or report missing (zap_report.json)</div>`;
+                return;
+            }
+
+            let html = '';
+            data.OWASPZAPReport.site.forEach(site => {
+                if (site.alerts) {
+                    site.alerts.forEach(alert => {
+                        let risk = alert.riskdesc.split(' ')[0].toLowerCase();
+                        if (risk === 'high') counts.high++;
+                        else if (risk === 'medium') counts.medium++;
+                        else if (risk === 'low') counts.low++;
+                        else counts.info++;
+
+                        html += `
+                        <div class="vuln-item">
+                            <div class="vuln-header">
+                                <span class="vuln-title">${alert.alert}</span>
+                                <span class="badge ${risk}">${alert.riskdesc}</span>
+                            </div>
+                            <div class="vuln-meta">
+                                <span class="meta-field">URI: <strong>${alert.uri}</strong></span>
+                                <span class="meta-field">Parameter: <strong>${alert.param || 'None'}</strong></span>
+                                <span class="meta-field">Plugin ID: <strong>${alert.pluginid}</strong></span>
+                            </div>
+                            <p class="vuln-desc">${alert.desc}</p>
+                            <div class="vuln-solution">${alert.solution}</div>
+                        </div>`;
+                    });
+                }
+            });
+
+            container.innerHTML = html || `<div class="no-data">No web vulnerabilities found by OWASP ZAP.</div>`;
+        }
+
+        function renderSqlmap(data) {
+            const container = document.getElementById('sqlmap-findings');
+            if (!data) {
+                container.innerHTML = `<div class="no-data">No sqlmap output or report missing (sqlmap_report.txt)</div>`;
+                return;
+            }
+
+            // Look for sqlmap identified injections to add to counts
+            if (data.includes("identified the following injection point(s)")) {
+                counts.high++; // Add 1 high vulnerability for SQLi confirmed
+            }
+
+            container.innerHTML = `<pre class="raw-report">${escapeHtml(data)}</pre>`;
+        }
+
+        function renderSummary(bandit, safety, trivyConfig, trivyImage, zap, sqlmap) {
+            const overview = document.getElementById('summary-overview');
+            
+            let status = `<p style="margin-bottom: 12px;">The scan reports contain the following tools results:</p><ul>`;
+            status += `<li><strong>Bandit (SAST):</strong> ${bandit ? bandit.results.length : 0} alerts detected.</li>`;
+            status += `<li><strong>Safety (Deps):</strong> ${safety ? safety.length : 0} dependencies issues detected.</li>`;
+            status += `<li><strong>Trivy Config:</strong> ${trivyConfig && trivyConfig.Results ? trivyConfig.Results.reduce((acc, curr) => acc + (curr.Misconfigurations ? curr.Misconfigurations.length : 0), 0) : 0} Dockerfile issues.</li>`;
+            status += `<li><strong>Trivy Image:</strong> ${trivyImage && trivyImage.Results ? trivyImage.Results.reduce((acc, curr) => acc + (curr.Vulnerabilities ? curr.Vulnerabilities.length : 0), 0) : 0} container OS CVEs.</li>`;
+            status += `<li><strong>OWASP ZAP (DAST):</strong> ${zap && zap.OWASPZAPReport.site ? zap.OWASPZAPReport.site.reduce((acc, curr) => acc + (curr.alerts ? curr.alerts.length : 0), 0) : 0} DAST issues.</li>`;
+            status += `<li><strong>SQLMap (DAST):</strong> ${sqlmap && sqlmap.includes("identified the following injection point(s)") ? "SQL injection CONFIRMED" : "No SQLi found / Run pending"}.</li>`;
+            status += `</ul>`;
+
+            overview.innerHTML = status;
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Initialize Dashboard
+        loadAllReports();
+    </script>
+</body>
+</html>

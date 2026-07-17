@@ -1,0 +1,49 @@
+{
+  "OWASPZAPReport": {
+    "@version": "2.12.0",
+    "@generated": "2026-07-17T11:44:00Z",
+    "site": [
+      {
+        "@name": "http://host.docker.internal:5000",
+        "@host": "host.docker.internal",
+        "@port": "5000",
+        "@ssl": "false",
+        "alerts": [
+          {
+            "pluginid": "40012",
+            "alert": "SQL Injection",
+            "riskcode": "3",
+            "confidence": "2",
+            "riskdesc": "High (Medium)",
+            "desc": "SQL injection may be possible. An attacker can execute arbitrary SQL queries against the database.",
+            "uri": "http://host.docker.internal:5000/api/user?username=admin",
+            "param": "username",
+            "solution": "Use parameterized queries or prepared statements."
+          },
+          {
+            "pluginid": "90001",
+            "alert": "Remote OS Command Injection",
+            "riskcode": "3",
+            "confidence": "2",
+            "riskdesc": "High (Medium)",
+            "desc": "Arbitrary command execution is possible on the host system via unsanitized input passed to shell execution functions.",
+            "uri": "http://host.docker.internal:5000/api/ping?host=127.0.0.1",
+            "param": "host",
+            "solution": "Avoid executing commands directly on the shell. Sanitize inputs and validate parameters."
+          },
+          {
+            "pluginid": "10021",
+            "alert": "X-Content-Type-Options Header Missing",
+            "riskcode": "1",
+            "confidence": "3",
+            "riskdesc": "Low (Medium)",
+            "desc": "The Anti-MIME-Sniffing header X-Content-Type-Options was not set to 'nosniff'.",
+            "uri": "http://host.docker.internal:5000/",
+            "param": "",
+            "solution": "Configure your web server to send the X-Content-Type-Options header with a value of 'nosniff'."
+          }
+        ]
+      }
+    ]
+  }
+}

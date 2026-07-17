@@ -74,7 +74,7 @@ pipeline {
                 echo "Running OWASP ZAP Baseline Scan..."
                 // Run OWASP ZAP against the home and API endpoints
                 // We mount reports directory to output ZAP reports
-                sh 'docker run --rm -v "$(pwd)/reports:/zap/wrk/:rw" -t owasp/zap2docker-stable zap-baseline.py -t "${TARGET_URL}" -r zap_report.html || true'
+                sh 'docker run --rm -v "$(pwd)/reports:/zap/wrk/:rw" -t owasp/zap2docker-stable zap-baseline.py -t "${TARGET_URL}" -r zap_report.html -J zap_report.json || true'
             }
         }
     }
