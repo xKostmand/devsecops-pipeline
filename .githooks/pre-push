@@ -1,0 +1,19 @@
+#!/bin/sh
+
+echo "=== Running Pre-Push Hooks ==="
+
+# Run Bandit SAST scanner locally or fall back to docker if available
+if command -v bandit >/dev/null 2>&1; then
+    echo "Running local Bandit scan..."
+    bandit -r app/
+    exit $?
+elif command -v docker >/dev/null 2>&1; then
+    echo "Running Bandit scan via Docker..."
+    # Run bandit using python docker image on current working directory
+    # Map the current workspace directory to /src in container
+    docker run --rm -v "$(pwd):/src" -w /src python:3.8-slim /bin/sh -c "pip install --quiet bandit && bandit -r app/"
+    exit $?
+else
+    echo "Warning: Bandit is not installed locally and Docker is not available. Skipping SAST pre-push checks."
+    exit 0
+fi

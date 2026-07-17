@@ -1,0 +1,18 @@
+#!/bin/sh
+
+echo "=== Running Post-Commit Hook ==="
+
+# Attempt to trigger local Jenkins instance of the commit
+JENKINS_URL="http://localhost:8080"
+JOB_NAME="DevSecOps-Pipeline"
+
+echo "Notifying local Jenkins instance at $JENKINS_URL..."
+
+if command -v curl >/dev/null 2>&1; then
+    # Trigger the build token-free (or with token if configured)
+    # --max-time is set to 2 seconds to fail fast if Jenkins is not running
+    curl -s -X POST "$JENKINS_URL/job/$JOB_NAME/build" --max-time 2 >/dev/null &
+    echo "Build trigger request sent to Jenkins in the background."
+else
+    echo "Warning: curl is not installed. Jenkins cannot be triggered automatically from post-commit hook."
+fi

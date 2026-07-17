@@ -1,0 +1,45 @@
+#!/bin/sh
+
+echo "=== Running Pre-Commit Hooks ==="
+
+# 1. Check for Hardcoded Secrets
+# Search staged files for potential secrets using regex
+# We look for common patterns like password, secret, token, api_key with assignment
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+SECRETS_FOUND=0
+
+for FILE in $STAGED_FILES; do
+    # Scan file contents for typical secret variables and keys
+    if grep -Eiq "password\s*=\s*['\"][^'\"]+['\"]|api_key\s*=\s*['\"][^'\"]+['\"]|secret_token\s*=\s*['\"][^'\"]+['\"]" "$FILE" 2>/dev/null; then
+        echo "Error: Potential hardcoded secret or credential found in $FILE!"
+        # Show the offending line (masking details for security but here we show it for visibility in tests)
+        grep -Ein "password|api_key|secret_token" "$FILE"
+        SECRETS_FOUND=1
+    fi
+done
+
+if [ $SECRETS_FOUND -ne 0 ]; then
+    echo "Commit blocked! Please remove hardcoded secrets or bypass using git commit --no-verify."
+    exit 1
+fi
+
+# 2. Python Syntax Check (Linting)
+PYTHON_ERRORS=0
+for FILE in $STAGED_FILES; do
+    if [ "${FILE##*.}" = "py" ]; then
+        if ! python -m py_compile "$FILE" >/dev/null 2>&1; then
+            echo "Error: Python syntax check failed for $FILE!"
+            python -m py_compile "$FILE"
+            PYTHON_ERRORS=1
+        fi
+    fi
+done
+
+if [ $PYTHON_ERRORS -ne 0 ]; then
+    echo "Commit blocked! Fix Python syntax errors before committing."
+    exit 1
+fi
+
+echo "Pre-commit checks passed successfully!"
+exit 0

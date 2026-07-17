@@ -1,0 +1,6 @@
+# Target endpoints for dynamic application security testing (DAST)
+# Format: METHOD URL [PARAMETER_TO_TEST]
+
+GET /api/user?username=admin username
+GET /api/ping?host=127.0.0.1 host
+GET /api/admin X-API-Key (Header)
