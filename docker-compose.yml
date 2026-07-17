@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile.jenkins
     container_name: devsecops-jenkins
+    environment:
+      - JAVA_OPTS=-Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true
     ports:
       - "8082:8080"
       - "50000:50000"
