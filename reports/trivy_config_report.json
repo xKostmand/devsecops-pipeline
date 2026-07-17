@@ -1,0 +1,30 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": ".",
+  "ArtifactType": "filesystem",
+  "Results": [
+    {
+      "Target": "app/Dockerfile",
+      "Class": "config",
+      "Type": "dockerfile",
+      "Misconfigurations": [
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS002",
+          "Title": "Single-stage Dockerfile should not run as root",
+          "Description": "Running containers as root is a major security risk.",
+          "Severity": "HIGH",
+          "Status": "FAIL"
+        },
+        {
+          "Type": "Dockerfile Security Check",
+          "ID": "DS026",
+          "Title": "Credential in ENV instruction",
+          "Description": "Storing credentials in environment variables inside a Dockerfile is insecure.",
+          "Severity": "CRITICAL",
+          "Status": "FAIL"
+        }
+      ]
+    }
+  ]
+}

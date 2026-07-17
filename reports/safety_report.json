@@ -1,0 +1,20 @@
+[
+  {
+    "vulnerability": {
+      "advisory": "Flask before 2.2.5 and 2.3.x before 2.3.2 allows session cookie tampering under certain conditions.",
+      "cve": "CVE-2023-30861",
+      "id": "58498",
+      "package_name": "flask",
+      "vulnerable_spec": "<2.2.5"
+    }
+  },
+  {
+    "vulnerability": {
+      "advisory": "Werkzeug before 2.2.3 allows cookie injection due to improper parsing of comma-separated cookies.",
+      "cve": "CVE-2023-23934",
+      "id": "53326",
+      "package_name": "werkzeug",
+      "vulnerable_spec": "<2.2.3"
+    }
+  }
+]

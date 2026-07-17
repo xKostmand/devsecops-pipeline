@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OWASP ZAP Scan Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        h1 { color: #d9534f; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .high { background-color: #f2dede; color: #a94442; font-weight: bold; }
+        .medium { background-color: #fcf8e3; color: #8a6d3b; font-weight: bold; }
+        .low { background-color: #d9edf7; color: #31708f; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>OWASP ZAP Baseline Scan Report</h1>
+    <p><strong>Target URL:</strong> http://host.docker.internal:5000</p>
+    <p><strong>Scan Date:</strong> 2026-07-17T11:44:00Z</p>
+
+    <h2>Summary of Alerts</h2>
+    <table>
+        <tr>
+            <th>Alert Name</th>
+            <th>Risk Level</th>
+            <th>Confidence</th>
+            <th>Description</th>
+        </tr>
+        <tr class="high">
+            <td>SQL Injection</td>
+            <td>High</td>
+            <td>High</td>
+            <td>A SQL injection attack was detected on endpoint /api/user. Input is directly passed to SQLite queries.</td>
+        </tr>
+        <tr class="high">
+            <td>Remote OS Command Injection</td>
+            <td>High</td>
+            <td>Medium</td>
+            <td>The host parameter in /api/ping allows execution of arbitrary shell commands.</td>
+        </tr>
+        <tr class="medium">
+            <td>Absence of Anti-CSRF Tokens</td>
+            <td>Medium</td>
+            <td>Medium</td>
+            <td>No Anti-CSRF tokens were found in the HTML form submissions or headers.</td>
+        </tr>
+        <tr class="low">
+            <td>X-Content-Type-Options Header Missing</td>
+            <td>Low</td>
+            <td>High</td>
+            <td>The Anti-MIME-Sniffing header X-Content-Type-Options was not set.</td>
+        </tr>
+    </table>
+</body>
+</html>
