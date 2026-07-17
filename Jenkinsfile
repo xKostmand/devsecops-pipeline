@@ -85,6 +85,9 @@ pipeline {
             sh 'docker stop vuln-app-run || true'
             sh 'docker rm vuln-app-run || true'
             
+            echo "Copying reports back to the host workspace..."
+            sh 'cp -r reports/* /src/reports/ || true'
+            
             echo "Archiving security reports..."
             archiveArtifacts artifacts: 'reports/*', allowEmptyArchive: true
         }
