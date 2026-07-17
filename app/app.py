@@ -1,3 +1,4 @@
+# Updated vulnerable Python Flask app for DevSecOps testing
 import sqlite3
 import subprocess
 import os
