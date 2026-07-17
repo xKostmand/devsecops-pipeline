@@ -405,14 +405,13 @@
     </main>
 
     <script>
-        // Security Metrics
-        let counts = { critical: 0, high: 0, medium: 0, low: 0 };
+        let isLoading = false;
 
-        function updateMetricsUI() {
-            document.getElementById('cnt-critical').innerText = counts.critical;
-            document.getElementById('cnt-high').innerText = counts.high;
-            document.getElementById('cnt-medium').innerText = counts.medium;
-            document.getElementById('cnt-low').innerText = counts.low;
+        function updateMetricsUI(metrics) {
+            document.getElementById('cnt-critical').innerText = metrics.critical;
+            document.getElementById('cnt-high').innerText = metrics.high;
+            document.getElementById('cnt-medium').innerText = metrics.medium;
+            document.getElementById('cnt-low').innerText = metrics.low;
         }
 
         function switchView(viewName) {
@@ -466,39 +465,57 @@
         }
 
         async function loadAllReports() {
-            // Reset counters
-            counts = { critical: 0, high: 0, medium: 0, low: 0 };
+            if (isLoading) return;
+            isLoading = true;
+
+            const btn = document.querySelector('.btn-refresh');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Loading...';
+            }
+
+            const localCounts = { critical: 0, high: 0, medium: 0, low: 0 };
             
-            // 1. Load Bandit
-            const banditData = await loadJson('bandit_report.json');
-            renderBandit(banditData);
+            try {
+                // 1. Load Bandit
+                const banditData = await loadJson('bandit_report.json');
+                renderBandit(banditData, localCounts);
 
-            // 2. Load Safety
-            const safetyData = await loadJson('safety_report.json');
-            renderSafety(safetyData);
+                // 2. Load Safety
+                const safetyData = await loadJson('safety_report.json');
+                renderSafety(safetyData, localCounts);
 
-            // 3. Load Trivy Config
-            const trivyConfigData = await loadJson('trivy_config_report.json');
-            renderTrivyConfig(trivyConfigData);
+                // 3. Load Trivy Config
+                const trivyConfigData = await loadJson('trivy_config_report.json');
+                renderTrivyConfig(trivyConfigData, localCounts);
 
-            // 4. Load Trivy Image
-            const trivyImageData = await loadJson('trivy_image_report.json');
-            renderTrivyImage(trivyImageData);
+                // 4. Load Trivy Image
+                const trivyImageData = await loadJson('trivy_image_report.json');
+                renderTrivyImage(trivyImageData, localCounts);
 
-            // 5. Load ZAP
-            const zapData = await loadJson('zap_report.json');
-            renderZap(zapData);
+                // 5. Load ZAP
+                const zapData = await loadJson('zap_report.json');
+                renderZap(zapData, localCounts);
 
-            // 6. Load SQLMap (Text)
-            const sqlmapData = await loadText('sqlmap_report.txt');
-            renderSqlmap(sqlmapData);
+                // 6. Load SQLMap (Text)
+                const sqlmapData = await loadText('sqlmap_report.txt');
+                renderSqlmap(sqlmapData, localCounts);
 
-            // Update global metrics UI
-            updateMetricsUI();
-            renderSummary(banditData, safetyData, trivyConfigData, trivyImageData, zapData, sqlmapData);
+                // Update global metrics UI
+                updateMetricsUI(localCounts);
+                renderSummary(banditData, safetyData, trivyConfigData, trivyImageData, zapData, sqlmapData);
+            } catch (err) {
+                console.error("Error loading reports:", err);
+            } finally {
+                isLoading = false;
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Reload Reports';
+                }
+            }
         }
 
-        function renderBandit(data) {
+        function renderBandit(data, counts) {
             const container = document.getElementById('bandit-findings');
             if (!data || !data.results || data.results.length === 0) {
                 container.innerHTML = `<div class="no-data">No vulnerabilities found or report missing (bandit_report.json)</div>`;
@@ -530,7 +547,7 @@
             container.innerHTML = html;
         }
 
-        function renderSafety(data) {
+        function renderSafety(data, counts) {
             const container = document.getElementById('safety-findings');
             if (!data || data.length === 0) {
                 container.innerHTML = `<div class="no-data">No dependency vulnerabilities found or report missing (safety_report.json)</div>`;
@@ -561,7 +578,7 @@
             container.innerHTML = html;
         }
 
-        function renderTrivyConfig(data) {
+        function renderTrivyConfig(data, counts) {
             const container = document.getElementById('trivy-config-findings');
             if (!data || !data.Results || data.Results.length === 0) {
                 container.innerHTML = `<div class="no-data">No config vulnerabilities found or report missing (trivy_config_report.json)</div>`;
@@ -597,7 +614,7 @@
             container.innerHTML = html || `<div class="no-data">No configuration issues found.</div>`;
         }
 
-        function renderTrivyImage(data) {
+        function renderTrivyImage(data, counts) {
             const container = document.getElementById('trivy-image-findings');
             if (!data || !data.Results || data.Results.length === 0) {
                 container.innerHTML = `<div class="no-data">No container vulnerabilities found or report missing (trivy_image_report.json)</div>`;
@@ -634,7 +651,7 @@
             container.innerHTML = html || `<div class="no-data">No image vulnerabilities found.</div>`;
         }
 
-        function renderZap(data) {
+        function renderZap(data, counts) {
             const container = document.getElementById('zap-findings');
             if (!data || !data.OWASPZAPReport || !data.OWASPZAPReport.site) {
                 container.innerHTML = `<div class="no-data">No ZAP vulnerabilities found or report missing (zap_report.json)</div>`;
@@ -672,7 +689,7 @@
             container.innerHTML = html || `<div class="no-data">No web vulnerabilities found by OWASP ZAP.</div>`;
         }
 
-        function renderSqlmap(data) {
+        function renderSqlmap(data, counts) {
             const container = document.getElementById('sqlmap-findings');
             if (!data) {
                 container.innerHTML = `<div class="no-data">No sqlmap output or report missing (sqlmap_report.txt)</div>`;
