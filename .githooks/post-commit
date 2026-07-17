@@ -3,7 +3,7 @@
 echo "=== Running Post-Commit Hook ==="
 
 # Attempt to trigger local Jenkins instance of the commit
-JENKINS_URL="http://localhost:8080"
+JENKINS_URL="http://localhost:8082"
 JOB_NAME="DevSecOps-Pipeline"
 
 echo "Notifying local Jenkins instance at $JENKINS_URL..."
